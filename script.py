@@ -95,7 +95,8 @@ def main():
                                 json.dump({
                                     "name": file,
                                     "length": total_bytes,
-                                    "signature": signature
+                                    "signature": signature,
+                                    "usedFiles": file
                                 }, f2)
 
             else:
@@ -160,7 +161,8 @@ def main():
                     json.dump({
                         "name": path.name,
                         "length": longestFileLength,
-                        "signature": averageSignature
+                        "signature": averageSignature,
+                        "usedFiles": dirList
                     }, f2)
 
 
