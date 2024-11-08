@@ -60,7 +60,7 @@ def main():
                 signatureLength = 0
                 signature = []
 
-                with open("programs/" + file, 'rb') as f:
+                with open(path / file, 'rb') as f:
                     byte_data = f.read()
 
                     total_bytes = len(byte_data)
