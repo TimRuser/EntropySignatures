@@ -117,7 +117,7 @@ def main():
                         
                         fullEntropy = calculateEntropy(byte_data)
 
-                        if fullEntropy > 7.5:
+                        if fullEntropy > 7.8:
                             print("Skipped " + file + " because it's probably packed")
                         else:
                             numOfChunks = math.ceil(total_bytes / args.chunk_size)
@@ -185,7 +185,7 @@ def main():
 
             fullEntropy = calculateEntropy(byte_data)
 
-            if fullEntropy > 7.5:
+            if fullEntropy > 7.8:
                 print("File is probably packed and should therefore be treated with caution")
             else:
                 
