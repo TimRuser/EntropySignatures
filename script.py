@@ -9,6 +9,7 @@ from tabulate import tabulate
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
 parser.add_argument('input', type=str, help="Input file path")
 parser.add_argument('--generate', action='store_true', help="Generate signatures from the given directory")
+parser.add_argument('--family', action='store_true', help="Calculates the average signature over the files in the directory")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
 
 def parseArgs():
@@ -53,47 +54,117 @@ def main():
 
             counter = 0
 
-            for file in dirList:
+            if not args.family:
+
+                for file in dirList:
+                    
+                    counter += 1
+
+                    signatureLength = 0
+                    signature = []
+
+                    with open(path / file, 'rb') as f:
+                        byte_data = f.read()
+
+                        total_bytes = len(byte_data)
+
+                        fullEntropy = calculateEntropy(byte_data)
+
+                        if fullEntropy > 7.5:
+                            print("Skipped " + file + " because it's probably packed")
+                        else:
+                            numOfChunks = math.ceil(total_bytes / args.chunk_size)
+
+                            f.seek(0)
+
+                            for chunkIterator in range(numOfChunks):
+                                chunk = f.read(args.chunk_size)
+                                
+                                if not chunk:
+                                    break
+
+                                chunkEntropy = calculateEntropy(chunk)
+
+                                signature.append(chunkEntropy) 
+
+                            print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
+
+                            os.makedirs('signatures/', exist_ok=True)
+
+                            with open("signatures/" + file.split('.')[0] + ".json", 'w') as f2:
+                                json.dump({
+                                    "name": file,
+                                    "length": total_bytes,
+                                    "signature": signature
+                                }, f2)
+
+            else:
+
+                signatures = []
+                longestFileLength = 0
+
+                for file in dirList:
+                    
+                    counter += 1
+
+                    signatureLength = 0
+                    signature = []
+
+                    with open(path / file, 'rb') as f:
+                        byte_data = f.read()
+
+                        total_bytes = len(byte_data)
+                        
+                        fullEntropy = calculateEntropy(byte_data)
+
+                        if fullEntropy > 7.5:
+                            print("Skipped " + file + " because it's probably packed")
+                        else:
+                            numOfChunks = math.ceil(total_bytes / args.chunk_size)
+
+                            f.seek(0)
+
+                            for chunkIterator in range(numOfChunks):
+                                chunk = f.read(args.chunk_size)
+                                
+                                if not chunk:
+                                    break
+
+                                chunkEntropy = calculateEntropy(chunk)
+
+                                signature.append(chunkEntropy) 
+
+                            print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
+
+                            longestFileLength = max(longestFileLength, total_bytes)
+                            signatures.append(signature)
+
+                maxLen = max([len(list) for list in signatures])
+
+                averageSignature = []
+
+                for i in range(maxLen):
+
+                    sum = 0
+
+                    for sig in signatures:
+                        
+                        if not i > len(sig) - 1:
+                            sum += sig[i]
+                        
+                    averageSignature.append(sum / len(signatures))
+
+                os.makedirs('signatures/', exist_ok=True)
+
+                with open("signatures/" + path.name + ".json", 'w') as f2:
+                    json.dump({
+                        "name": path.name,
+                        "length": longestFileLength,
+                        "signature": averageSignature
+                    }, f2)
+
+
                 
-                counter += 1
-
-                signatureLength = 0
-                signature = []
-
-                with open(path / file, 'rb') as f:
-                    byte_data = f.read()
-
-                    total_bytes = len(byte_data)
-
-                    fullEntropy = calculateEntropy(byte_data)
-
-                    if fullEntropy > 7.5:
-                        print("Skipped " + file + " because it's probably packed")
-                    else:
-                        numOfChunks = math.ceil(total_bytes / args.chunk_size)
-
-                        f.seek(0)
-
-                        for chunkIterator in range(numOfChunks):
-                            chunk = f.read(args.chunk_size)
-                            
-                            if not chunk:
-                                break
-
-                            chunkEntropy = calculateEntropy(chunk)
-
-                            signature.append(chunkEntropy) 
-
-                        print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
-
-                        os.makedirs('signatures/', exist_ok=True)
-
-                        with open("signatures/" + file.split('.')[0] + ".json", 'w') as f2:
-                            json.dump({
-                                "name": file,
-                                "length": total_bytes,
-                                "signature": signature
-                            }, f2)
 
     else:
 
