@@ -86,6 +86,8 @@ def main():
 
                         print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
 
+                        os.makedirs('signatures/', exist_ok=True)
+
                         with open("signatures/" + file.split('.')[0] + ".json", 'w') as f2:
                             json.dump({
                                 "name": file,
