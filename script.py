@@ -298,9 +298,10 @@ def main():
                                 match = 1 - (1 / maxLength) * cumulatedError
                                 cumMatch += match
                                 
+                                maxMatch = max(maxMatch, match)
+
                                 if match > 0.85:
                                     numMatches += 1 
-                                    maxMatch = max(maxMatch, match)
                             
                             cumMatch = (1 / len(signature) * cumMatch)
 
