@@ -136,7 +136,7 @@ def generate(args, path):
 
                             signature.append(chunkEntropy) 
 
-                        print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
+                        print("Generating signature for " + str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks", end="\r")
 
                         if not args.collection:
 
@@ -168,6 +168,8 @@ def generate(args, path):
                         "signature": signatureCollection,
                         "usedFiles": dirList
                     }, f2)
+
+            print("Finished generating signature")
 
         else:
 
@@ -205,7 +207,7 @@ def generate(args, path):
 
                             signature.append(chunkEntropy) 
 
-                        print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
+                        print("Generating signature for " + str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks", end="\r")
 
                         longestChunkLength = max(longestChunkLength, numOfChunks)
 
@@ -237,6 +239,8 @@ def generate(args, path):
                     "signature": averageSignature,
                     "usedFiles": dirList
                 }, f2)
+
+            print("Finished generating signature")
 
 def test(args, path):
     
@@ -398,7 +402,7 @@ def benchmark(args, path):
                     if match[2] > 0.85:
                         numDetections += 1
                         break
-            print(str(counter) + "/" + str(len(allExes)))
+            print("Evaluating: " + str(counter) + "/" + str(len(allExes)), end='\r')
 
         outputList.append([
             folder,
