@@ -258,7 +258,7 @@ def test(args, path):
         fullEntropy = calculateEntropy(byte_data)
 
         if fullEntropy > 7.8:
-            
+
             print("File is probably packed and should therefore be treated with caution")
             return []
         
@@ -389,10 +389,10 @@ def benchmark(args, path):
                 if match[2] > 0.85:
                     numDetections += 1
 
-        outputList.append({
+        outputList.append([
             folder,
             f"{numDetections}/{len(allExes)}"
-        })
+        ])
 
     print(tabulate(outputList, ["Folder", "Files that were flagged"]))
 
