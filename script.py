@@ -410,10 +410,11 @@ def benchmark(args, path):
 
         outputList.append([
             folder,
-            f"{numDetections}/{len(allExes)}"
+            f"{numDetections}/{len(allExes)}",
+            f"{(numDetections / len(allExes)) * 100:.2f}%"
         ])
 
-    print(tabulate(outputList, ["Folder", "Files that were flagged"]))
+    print(tabulate(outputList, ["Folder", "Flagged files", "Percentage"]))
 
 def main():
     
