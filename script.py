@@ -386,9 +386,15 @@ def benchmark(args, path):
 
         for exe in allExes:
             for match in test(args, path / folder / exe):
-                if match[2] > 0.85:
-                    numDetections += 1
-                    break
+
+                if match[0]:
+                    if match[4] > 0.85:
+                        numDetections += 1
+                        break
+                else:
+                    if match[2] > 0.85:
+                        numDetections += 1
+                        break
 
         outputList.append([
             folder,
