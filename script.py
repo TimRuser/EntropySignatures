@@ -7,8 +7,8 @@ from pathlib import Path
 from tabulate import tabulate
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
-parser.add_argument('input', type=str, help="Input file path")
-parser.add_argument('--generate', action='store_true', help="Generate signatures from the given directory")
+parser.add_argument('mode', type=str, help="Operating mode, can be generate, test or show")
+parser.add_argument('input', type=str, nargs="?", help="Input file path")
 parser.add_argument('--family', action='store_true', help="Calculates the average signature over the files in the directory")
 parser.add_argument('--collection', action='store_true', help="Store signatures individually but as one family")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
@@ -66,13 +66,46 @@ def displayMatchList(list):
 
     print("\n")
 
+def showSignatures():
+    
+    dirlist = os.listdir("./signatures")
+
+    dirlist = [file for file in dirlist if file.split('.')[-1] == 'json']
+    
+    showList = []    
+
+    for file in dirlist:
+
+        with open("signatures/" + file, 'r') as f:
+
+            signatureData = json.load(f)
+
+            showList.append([
+                signatureData['name'],
+                signatureData['max-length'],
+                signatureData['chunk-size'],
+                signatureData['collection'],
+                len(signatureData['usedFiles']) if isinstance(signatureData['usedFiles'], list) else 1
+            ])
+
+    print(tabulate(showList, headers=["Name", "Max Length", "Chunk size", "Is collection", "Files used"]))
+    
+
 def main():
     
     args = parseArgs()
 
-    path = Path(args.input).resolve()
+    if args.mode == 'show':
+        showSignatures()
+        return None
 
-    if args.generate:
+    if args.input:
+        path = Path(args.input).resolve()
+    else:
+        print("For the mode " + args.mode + " an input file or folder is required")
+        return None
+
+    if args.mode == 'generate':
 
         if not path.is_dir():
             print("Input has to be a directory to create signatures")
