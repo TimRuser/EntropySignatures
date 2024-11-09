@@ -258,7 +258,10 @@ def test(args, path):
         fullEntropy = calculateEntropy(byte_data)
 
         if fullEntropy > 7.8:
+            
             print("File is probably packed and should therefore be treated with caution")
+            return []
+        
         else:
             
             f.seek(0)
