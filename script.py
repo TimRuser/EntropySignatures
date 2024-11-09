@@ -384,7 +384,10 @@ def benchmark(args, path):
 
         numDetections = 0
 
+        counter = 0
+
         for exe in allExes:
+            counter += 1
             for match in test(args, path / folder / exe):
 
                 if match[0]:
@@ -395,6 +398,7 @@ def benchmark(args, path):
                     if match[2] > 0.85:
                         numDetections += 1
                         break
+            print(str(counter) + "/" + str(len(allExes)))
 
         outputList.append([
             folder,
