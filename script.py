@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description="Tool to create entropy signatures 
 parser.add_argument('input', type=str, help="Input file path")
 parser.add_argument('--generate', action='store_true', help="Generate signatures from the given directory")
 parser.add_argument('--family', action='store_true', help="Calculates the average signature over the files in the directory")
+parser.add_argument('--collection', action='store_true', help="Store signatures individually but as one family")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
 
 def parseArgs():
@@ -30,13 +31,29 @@ def calculateEntropy(data):
 
 def displayMatchList(list):
 
-    print("Found the following matches:")
+    print("\n")
 
-    sorted_list = sorted(list, key=lambda x: x[1], reverse=True)
+    print("Found the following individual matches:")
 
-    formated_list = [[name, f"{value * 100:.3f}%"] for name, value in sorted_list]
+    individualList = [item for item in list if not item[0]]
 
-    print(tabulate(formated_list))
+    sorted_list = sorted(individualList, key=lambda x: x[2], reverse=True)
+
+    formated_list = [[name, f"{value * 100:.2f}%"] for discard, name, value in sorted_list]
+    print(tabulate(formated_list, headers=["Name", "Match"]))
+
+    print("\n")
+
+    print("Found the following collection matches:")
+
+    collectionList = [item for item in list if item[0]]    
+
+    sorted_list = sorted(collectionList, key=lambda x: x[2], reverse=True)
+
+    formated_list = [[name, f"{value * 100:.2f}%", numMatches, f"{maxMatch * 100:.2f}%"] for discard, name, value, numMatches, maxMatch in sorted_list]
+    print(tabulate(formated_list, headers=["Collection name", "Cumulated match", "Matches >85%", "Highest match"]))
+
+    print("\n")
 
 def main():
     
@@ -55,6 +72,9 @@ def main():
             counter = 0
 
             if not args.family:
+
+                if args.collection:
+                    signatureCollection = []
 
                 for file in dirList:
                     
@@ -89,20 +109,41 @@ def main():
 
                             print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
 
-                            os.makedirs('signatures/', exist_ok=True)
+                            if not args.collection:
 
-                            with open("signatures/" + file.split('.')[0] + ".json", 'w') as f2:
-                                json.dump({
-                                    "name": file,
-                                    "length": total_bytes,
-                                    "signature": signature,
-                                    "usedFiles": file
-                                }, f2)
+                                os.makedirs('signatures/', exist_ok=True)
+
+                                with open("signatures/" + file.split('.')[0] + ".json", 'w') as f2:
+                                    json.dump({
+                                        "name": file,
+                                        "max-length": numOfChunks,
+                                        "collection": False,
+                                        "chunk-size": args.chunk_size,
+                                        "signature": signature,
+                                        "usedFiles": file
+                                    }, f2)
+
+                            else:
+                                signatureCollection.append(signature)
+
+                if args.collection:
+
+                    os.makedirs('signatures/', exist_ok=True)
+
+                    with open("signatures/" + path.name + ".json", 'w') as f2:
+                        json.dump({
+                            "name": path.name,
+                            "max-length": max([len(sig) for sig in signatureCollection]),
+                            "chunk-size": args.chunk_size,
+                            "collection": True,
+                            "signature": signatureCollection,
+                            "usedFiles": dirList
+                        }, f2)
 
             else:
 
                 signatures = []
-                longestFileLength = 0
+                longestChunkLength = 0
 
                 for file in dirList:
                     
@@ -137,7 +178,8 @@ def main():
 
                             print(str(counter) + "/" + str(len(dirList)) + " : " + str(numOfChunks) + " chunks")
 
-                            longestFileLength = max(longestFileLength, total_bytes)
+                            longestChunkLength = max(longestChunkLength, numOfChunks)
+
                             signatures.append(signature)
 
                 maxLen = max([len(list) for list in signatures])
@@ -160,7 +202,9 @@ def main():
                 with open("signatures/" + path.name + ".json", 'w') as f2:
                     json.dump({
                         "name": path.name,
-                        "length": longestFileLength,
+                        "max-length": longestChunkLength,
+                        "collection": False,
+                        "chunk-size": args.chunk_size,
                         "signature": averageSignature,
                         "usedFiles": dirList
                     }, f2)
@@ -224,27 +268,68 @@ def main():
 
                         signature = signatureData['signature']
 
-                        numOfChunks = math.ceil(signatureData['length'] / args.chunk_size)
+                        if not signatureData['chunk-size'] == args.chunk_size:
+                            print("Signature has the chunk size " + str(signatureData['chunk-size']) + " but " + str(args.chunk_size) + " was given")
+                            return None
 
-                        f2.seek(0)
+                        numOfChunks = signatureData['max-length']
 
                         cumulatedError = 0
 
-                        maxLength = max(len(signature), len(testSignature))
+                        if signatureData['collection']:
 
-                        for i in range(maxLength):
+                            maxLength = numOfChunks
 
-                            if len(signature) - 1 < i or len(testSignature) - 1 < i:
-                                cumulatedError += 1
-                            else:
-                                cumulatedError += abs(testSignature[i] - signature[i]) / 8
+                            cumMatch = 0
+                            numMatches = 0
+                            maxMatch = 0
 
-                        match = 1 - (1 / maxLength) * cumulatedError
-                        
-                        matchList.append([
-                            signatureData['name'],
-                            match
-                        ])
+                            for i in range(len(signature)):
+
+                                cumulatedError = 0
+
+                                for k in range(maxLength):
+
+                                    if len(signature[i]) - 1 < k or len(testSignature) - 1 < k:
+                                        cumulatedError += 1
+                                    else:
+                                        cumulatedError += abs(testSignature[k] - signature[i][k]) / 8
+
+                                match = 1 - (1 / maxLength) * cumulatedError
+                                cumMatch += match
+                                
+                                if match > 0.85:
+                                    numMatches += 1 
+                                    maxMatch = max(maxMatch, match)
+                            
+                            cumMatch = (1 / len(signature) * cumMatch)
+
+                            matchList.append([
+                                True,
+                                signatureData['name'],
+                                cumMatch,
+                                numMatches,
+                                maxMatch
+                            ])
+
+                        else:
+
+                            maxLength = max(numOfChunks, len(testSignature))
+
+                            for i in range(maxLength):
+
+                                if len(signature) - 1 < i or len(testSignature) - 1 < i:
+                                    cumulatedError += 1
+                                else:
+                                    cumulatedError += abs(testSignature[i] - signature[i]) / 8
+
+                            match = 1 - (1 / maxLength) * cumulatedError
+                            
+                            matchList.append([
+                                False,
+                                signatureData['name'],
+                                match
+                            ])
                 
                 displayMatchList(matchList)
     
