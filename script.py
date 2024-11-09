@@ -33,25 +33,36 @@ def displayMatchList(list):
 
     print("\n")
 
-    print("Found the following individual matches:")
 
     individualList = [item for item in list if not item[0]]
 
-    sorted_list = sorted(individualList, key=lambda x: x[2], reverse=True)
+    if len(individualList) > 0:
 
-    formated_list = [[name, f"{value * 100:.2f}%"] for discard, name, value in sorted_list]
-    print(tabulate(formated_list, headers=["Name", "Match"]))
+        print("Found the following individual matches:")
+
+        sorted_list = sorted(individualList, key=lambda x: x[2], reverse=True)
+
+        formated_list = [[name, f"{value * 100:.2f}%"] for discard, name, value in sorted_list]
+        print(tabulate(formated_list, headers=["Name", "Match"]))
+
+    else:
+        print("No indidivual matches found")
 
     print("\n")
 
-    print("Found the following collection matches:")
 
     collectionList = [item for item in list if item[0]]    
 
-    sorted_list = sorted(collectionList, key=lambda x: x[2], reverse=True)
+    if len(collectionList) > 0:
+        print("Found the following collection matches:")
 
-    formated_list = [[name, f"{value * 100:.2f}%", numMatches, f"{maxMatch * 100:.2f}%"] for discard, name, value, numMatches, maxMatch in sorted_list]
-    print(tabulate(formated_list, headers=["Collection name", "Cumulated match", "Matches >85%", "Highest match"]))
+        sorted_list = sorted(collectionList, key=lambda x: x[2], reverse=True)
+
+        formated_list = [[name, f"{value * 100:.2f}%", numMatches, f"{maxMatch * 100:.2f}%"] for discard, name, value, numMatches, maxMatch in sorted_list]
+        print(tabulate(formated_list, headers=["Collection name", "Cumulated match", "Matches >85%", "Highest match"]))
+
+    else:
+        print("No collection matches found")
 
     print("\n")
 
