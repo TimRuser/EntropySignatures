@@ -358,8 +358,40 @@ def test(args, path):
                             match
                         ])
             
-            displayMatchList(matchList)
+            return matchList
 
+def benchmark(args, path):
+
+
+    if not path.is_dir():
+        print("Path must be a directory")
+        return None
+    
+    dirlist = os.listdir(path)
+
+    listFolders = [folder for folder in dirlist if (path / folder).is_dir()]
+
+    outputList = []
+
+    for folder in listFolders:
+
+        dirlist = os.listdir(path / folder)
+
+        allExes = [exe for exe in dirlist if exe.split('.')[-1] == 'exe']
+
+        numDetections = 0
+
+        for exe in allExes:
+            for match in test(args, path / folder / exe):
+                if match[2] > 0.85:
+                    numDetections += 1
+
+        outputList.append({
+            folder,
+            f"{numDetections}/{len(allExes)}"
+        })
+
+    print(tabulate(outputList, ["Folder", "Files that were flagged"]))
 
 def main():
     
@@ -378,7 +410,9 @@ def main():
     if args.mode == 'generate':
         generate(args, path)
     elif args.mode == 'test':
-        test(args, path)
+        displayMatchList(test(args, path))
+    elif args.mode == 'benchmark':
+        benchmark(args, path)
     else:
         print("There is no mode named " + args.mode)
 
