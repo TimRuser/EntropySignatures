@@ -380,7 +380,11 @@ def benchmark(args, path):
 
     outputList = []
 
+    folderCounter = 0
+
     for folder in listFolders:
+
+        folderCounter += 1
 
         dirlist = os.listdir(path / folder)
 
@@ -402,7 +406,7 @@ def benchmark(args, path):
                     if match[2] > 0.85:
                         numDetections += 1
                         break
-            print("Evaluating: " + str(counter) + "/" + str(len(allExes)), end='\r')
+            print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
 
         outputList.append([
             folder,
