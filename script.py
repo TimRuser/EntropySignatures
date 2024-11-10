@@ -19,6 +19,7 @@ parser.add_argument('--family', action='store_true', help="Calculates the averag
 parser.add_argument('--collection', action='store_true', help="Store signatures individually but as one family")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
 parser.add_argument('--label', type=int, help="Label that every file in the generated dataset will have, 0 = benign, 1 = malware")
+parser.add_argument('--use-nn', type=str, help="Use a given neural network for the benchmark")
 
 def parseArgs():
     return parser.parse_args()
@@ -402,17 +403,27 @@ def benchmark(args, path):
 
         for exe in allExes:
             counter += 1
-            for match in test(args, path / folder / exe):
 
-                if match[0]:
-                    if match[4] > 0.85:
-                        numDetections += 1
-                        break
-                else:
-                    if match[2] > 0.85:
-                        numDetections += 1
-                        break
-            print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
+            if not args.use_nn:
+
+                for match in test(args, path / folder / exe):
+
+                    if match[0]:
+                        if match[4] > 0.85:
+                            numDetections += 1
+                            break
+                    else:
+                        if match[2] > 0.85:
+                            numDetections += 1
+                            break
+                print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
+
+            else:
+
+                match = nn(args, [args.use_nn, path / folder / exe])
+
+                if match > 0.5:
+                    numDetections += 1
 
         outputList.append([
             folder,
@@ -609,7 +620,8 @@ def nn(args, path):
     with torch.no_grad():
         output = model(tensorInput)
 
-    print("Prediction to be malicious:", f"{output.item() * 100:.2f}%")
+    return output.item()
+
 
 def main():
     
@@ -636,7 +648,7 @@ def main():
     elif args.mode == 'sections':
         sections(args, path)
     elif args.mode == 'nn':
-        nn(args, path)
+        print("Prediction to be malicious:", f"{nn(args,path) * 100:.2f}%")
     elif args.mode == 'dataset':
         dataset(args, path)
     else:
