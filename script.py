@@ -14,6 +14,7 @@ parser.add_argument('input', type=str, nargs="?", help="Input file path")
 parser.add_argument('--family', action='store_true', help="Calculates the average signature over the files in the directory")
 parser.add_argument('--collection', action='store_true', help="Store signatures individually but as one family")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
+parser.add_argument('--label', type=int, help="Label that every file in the generated dataset will have, 0 = benign, 1 = malware")
 
 def parseArgs():
     return parser.parse_args()
@@ -455,6 +456,10 @@ def sections(args, path):
 
 def dataset(args, path):
 
+    if not (args.label == 1 or args.label == 0):
+        print("Label has to be set and either 0 or 1")
+        return None
+
     def chooseSectionNum(name: str):
         if name == ".text":
             return 1
@@ -515,21 +520,30 @@ def dataset(args, path):
 
             fileData = []
 
-            for section in pe.sections:
-                fileData.append([
-                    chooseSectionNum(getFullSectionName(pe, section.Name)),
-                    section.SizeOfRawData,
-                    calculateEntropy(section.get_data())
-                ])
+            for i in range(16):
 
-            outputData.append(fileData)
+                if len(pe.sections) > i:
+                    section = pe.sections[i]
+
+                    fileData.append([
+                        chooseSectionNum(getFullSectionName(pe, section.Name)),
+                        section.SizeOfRawData,
+                        calculateEntropy(section.get_data())
+                    ])
+                else:
+                    fileData.append([0,0,0,0])
+
+            outputData.append({
+                'label': args.label,
+                'sections': fileData
+            })
 
             print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
 
 
     os.makedirs('datasets/', exist_ok=True)
 
-    pd.DataFrame(outputData).to_json('datasets/' + path.name + '.json', orient='records', lines=True)
+    pd.DataFrame(outputData).to_json('datasets/' + path.name + '.json', orient='records')
 
 def main():
     
