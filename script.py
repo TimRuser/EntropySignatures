@@ -5,6 +5,8 @@ import math
 import json
 from pathlib import Path
 from tabulate import tabulate
+import pefile
+import pandas as pd
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
 parser.add_argument('mode', type=str, help="Operating mode, can be generate, test or show")
@@ -369,7 +371,6 @@ def test(args, path):
 
 def benchmark(args, path):
 
-
     if not path.is_dir():
         print("Path must be a directory")
         return None
@@ -416,6 +417,109 @@ def benchmark(args, path):
 
     print(tabulate(outputList, ["Folder", "Flagged files", "Percentage"]))
 
+def getFullSectionName(pe, originalName):
+
+    section_name = originalName
+    section_name = section_name.rstrip(b'\x00')
+
+    if section_name.startswith(b'/'):
+        offset = int(section_name[1:].decode().strip())
+        
+        symbol_table_offset = pe.FILE_HEADER.PointerToSymbolTable
+        num_symbols = pe.FILE_HEADER.NumberOfSymbols
+        string_table_offset = symbol_table_offset + (num_symbols * 18)
+        
+        full_name = pe.__data__[string_table_offset + offset:].split(b'\x00', 1)[0]
+        return full_name.decode()
+        
+    else:
+        return section_name.decode().strip()
+
+def sections(args, path):
+
+    pe = pefile.PE(path)
+
+    outputList = []
+
+    for section in pe.sections:
+
+        outputList.append([
+            getFullSectionName(pe, section.Name),
+            section.SizeOfRawData,
+            calculateEntropy(section.get_data())
+        ])
+
+    print(tabulate(outputList, headers=["Section", "Size", "Entropy"]))
+
+    pe.close()
+
+def dataset(args, path):
+
+    def chooseSectionNum(name: str):
+        if name == ".text":
+            return 1
+        elif name == ".rdata":
+            return 2
+        elif name == ".pdata":
+            return 3
+        elif name == ".reloc":
+            return 4
+        elif name == ".rsrc":
+            return 5
+        elif name == ".idata":
+            return 6
+        elif name == ".sdata":
+            return 7
+        elif name == ".tls":
+            return 8
+        elif name == ".data":
+            return 9
+        elif name == ".debug":
+            return 10
+        elif name == ".ndata":
+            return 11
+        elif name == ".xdata":
+            return 12
+        elif name.startswith(".debug"):
+            return 13
+        else:
+            return 14
+
+    if not path.is_dir():
+            print("Path must be a directory")
+            return None
+        
+    outputData = []
+
+    dirlist = os.listdir(path)
+
+    listFolders = [folder for folder in dirlist if (path / folder).is_dir()]
+
+    for folder in listFolders:
+
+        dirlist = os.listdir(path / folder)
+
+        allExes = [exe for exe in dirlist if exe.split('.')[-1] == 'exe']
+
+        for file in allExes:
+
+            pe = pefile.PE(path / folder / file)
+
+            fileData = []
+
+            for section in pe.sections:
+                fileData.append([
+                    chooseSectionNum(getFullSectionName(pe, section.Name)),
+                    section.SizeOfRawData,
+                    calculateEntropy(section.get_data())
+                ])
+
+            outputData.append(fileData)
+
+    os.makedirs('datasets/', exist_ok=True)
+
+    pd.DataFrame(outputData).to_json('datasets/data.json', orient='records', lines=True)
+
 def main():
     
     args = parseArgs()
@@ -436,6 +540,10 @@ def main():
         displayMatchList(test(args, path))
     elif args.mode == 'benchmark':
         benchmark(args, path)
+    elif args.mode == 'sections':
+        sections(args, path)
+    elif args.mode == 'dataset':
+        dataset(args, path)
     else:
         print("There is no mode named " + args.mode)
 

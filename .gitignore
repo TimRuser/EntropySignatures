@@ -2,3 +2,4 @@ programs/
 signatures
 *.exe
 poc.ipynb
+nn.ipynb
