@@ -495,13 +495,21 @@ def dataset(args, path):
 
     listFolders = [folder for folder in dirlist if (path / folder).is_dir()]
 
+    folderCounter = 0
+
     for folder in listFolders:
+
+        folderCounter += 1
 
         dirlist = os.listdir(path / folder)
 
         allExes = [exe for exe in dirlist if exe.split('.')[-1] == 'exe']
 
+        counter = 0
+
         for file in allExes:
+
+            counter += 1
 
             pe = pefile.PE(path / folder / file)
 
@@ -515,6 +523,9 @@ def dataset(args, path):
                 ])
 
             outputData.append(fileData)
+
+            print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
+
 
     os.makedirs('datasets/', exist_ok=True)
 
