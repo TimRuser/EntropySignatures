@@ -568,7 +568,9 @@ def nn(args, path):
         print("Only one input was given, nn requires an input file and the saved model")
         return None
 
-    model = torch.load(Path(path[0]).resolve())
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = torch.load(Path(path[0]).resolve(), map_location=device)
     model.eval()
 
     pe = pefile.PE(Path(path[1]).resolve())
@@ -611,8 +613,6 @@ def nn(args, path):
             newXTemp.append(tmp)
         newX.append(newXTemp)
     X = newX
-
-    device = next(model.parameters()).device
 
     tensorInput = torch.tensor(X, dtype=torch.float32).to(device)
     tensorInput = tensorInput.permute(1,0,2)
