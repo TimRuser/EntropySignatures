@@ -430,10 +430,10 @@ def getFullSectionName(pe, originalName):
         string_table_offset = symbol_table_offset + (num_symbols * 18)
         
         full_name = pe.__data__[string_table_offset + offset:].split(b'\x00', 1)[0]
-        return full_name.decode()
+        return full_name.decode(errors='ignore')
         
     else:
-        return section_name.decode().strip()
+        return section_name.decode(errors='ignore').strip()
 
 def sections(args, path):
 
