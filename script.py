@@ -7,10 +7,14 @@ from pathlib import Path
 from tabulate import tabulate
 import pefile
 import pandas as pd
+import torch
+import numpy as np
+
+from modelClasses.initial import EnhancedModel
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
 parser.add_argument('mode', type=str, help="Operating mode, can be generate, test or show")
-parser.add_argument('input', type=str, nargs="?", help="Input file path")
+parser.add_argument('input', type=str, nargs="*", help="Input file path")
 parser.add_argument('--family', action='store_true', help="Calculates the average signature over the files in the directory")
 parser.add_argument('--collection', action='store_true', help="Store signatures individually but as one family")
 parser.add_argument('--chunk-size', type=int, default=2048, help="Size of the chunks")
@@ -454,41 +458,41 @@ def sections(args, path):
 
     pe.close()
 
+def chooseSectionNum(name: str):
+    if name == ".text":
+        return 1
+    elif name == ".rdata":
+        return 2
+    elif name == ".pdata":
+        return 3
+    elif name == ".reloc":
+        return 4
+    elif name == ".rsrc":
+        return 5
+    elif name == ".idata":
+        return 6
+    elif name == ".sdata":
+        return 7
+    elif name == ".tls":
+        return 8
+    elif name == ".data":
+        return 9
+    elif name == ".debug":
+        return 10
+    elif name == ".ndata":
+        return 11
+    elif name == ".xdata":
+        return 12
+    elif name.startswith(".debug"):
+        return 13
+    else:
+        return 14
+
 def dataset(args, path):
 
     if not (args.label == 1 or args.label == 0):
         print("Label has to be set and either 0 or 1")
         return None
-
-    def chooseSectionNum(name: str):
-        if name == ".text":
-            return 1
-        elif name == ".rdata":
-            return 2
-        elif name == ".pdata":
-            return 3
-        elif name == ".reloc":
-            return 4
-        elif name == ".rsrc":
-            return 5
-        elif name == ".idata":
-            return 6
-        elif name == ".sdata":
-            return 7
-        elif name == ".tls":
-            return 8
-        elif name == ".data":
-            return 9
-        elif name == ".debug":
-            return 10
-        elif name == ".ndata":
-            return 11
-        elif name == ".xdata":
-            return 12
-        elif name.startswith(".debug"):
-            return 13
-        else:
-            return 14
 
     if not path.is_dir():
             print("Path must be a directory")
@@ -545,6 +549,68 @@ def dataset(args, path):
 
     pd.DataFrame(outputData).to_json('datasets/' + path.name + '.json', orient='records')
 
+    print("Successfully generated dataset and saved it to dataset/" + path.name + ".json")
+
+def nn(args, path):
+
+    if not isinstance(path,list):
+        print("Only one input was given, nn requires an input file and the saved model")
+        return None
+
+    model = torch.load(Path(path[0]).resolve())
+    model.eval()
+
+    pe = pefile.PE(Path(path[1]).resolve())
+
+    fileData = []    
+
+    for i in range(16):
+
+        if len(pe.sections) > i:
+            section = pe.sections[i]
+
+            fileData.append([
+                chooseSectionNum(getFullSectionName(pe, section.Name)),
+                section.SizeOfRawData,
+                calculateEntropy(section.get_data())
+            ])
+        else:
+            fileData.append([0,0,0,0])
+
+    # A bit janky but works
+    def ensure_16_entries(entry, target_length=16, pad_value=0):
+        if len(entry) > target_length:
+            return entry[:target_length]
+        elif len(entry) < target_length:
+            return entry + [pad_value] * (target_length - len(entry))
+        return entry  
+
+    X = [np.array([ensure_16_entries(entry)]) for entry in fileData]
+
+    newX = []
+    for entry in X:
+        newXTemp = []
+        for i in range(len(entry)):
+            tmp = [0, 0, 0]
+
+            tmp[0] = entry[i][0] / 14
+            tmp[1] = entry[i][1] / 1000000000
+            tmp[2] = entry[i][2] / 8
+            
+            newXTemp.append(tmp)
+        newX.append(newXTemp)
+    X = newX
+
+    device = next(model.parameters()).device
+
+    tensorInput = torch.tensor(X, dtype=torch.float32).to(device)
+    tensorInput = tensorInput.permute(1,0,2)
+
+    with torch.no_grad():
+        output = model(tensorInput)
+
+    print("Prediction to be malicious:", f"{output.item() * 100:.2f}%")
+
 def main():
     
     args = parseArgs()
@@ -553,8 +619,10 @@ def main():
         showSignatures()
         return None
 
-    if args.input:
-        path = Path(args.input).resolve()
+    if args.input and args.mode != 'nn':
+        path = Path(args.input[0]).resolve()
+    elif args.mode == 'nn' and len(args.input) > 0:
+        path = args.input
     else:
         print("For the mode " + args.mode + " an input file or folder is required")
         return None
@@ -567,6 +635,8 @@ def main():
         benchmark(args, path)
     elif args.mode == 'sections':
         sections(args, path)
+    elif args.mode == 'nn':
+        nn(args, path)
     elif args.mode == 'dataset':
         dataset(args, path)
     else:
