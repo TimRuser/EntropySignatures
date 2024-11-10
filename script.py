@@ -518,7 +518,7 @@ def dataset(args, path):
 
     os.makedirs('datasets/', exist_ok=True)
 
-    pd.DataFrame(outputData).to_json('datasets/data.json', orient='records', lines=True)
+    pd.DataFrame(outputData).to_json('datasets/' + path.name + '.json', orient='records', lines=True)
 
 def main():
     
