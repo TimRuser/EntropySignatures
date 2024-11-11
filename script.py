@@ -428,6 +428,8 @@ def benchmark(args, path):
                 if match > 0.5:
                     numDetections += 1
 
+                print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
+
         if len(allExes) > 0:
             outputList.append([
                 folder,
