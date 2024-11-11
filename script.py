@@ -428,11 +428,18 @@ def benchmark(args, path):
                 if match > 0.5:
                     numDetections += 1
 
-        outputList.append([
-            folder,
-            f"{numDetections}/{len(allExes)}",
-            f"{(numDetections / len(allExes)) * 100:.2f}%"
-        ])
+        if len(allExes) > 0:
+            outputList.append([
+                folder,
+                f"{numDetections}/{len(allExes)}",
+                f"{(numDetections / len(allExes)) * 100:.2f}%"
+            ])
+        else:
+            outputList.append([
+                folder,
+                "0/0",
+                "0.00%"
+            ])
 
     print(tabulate(outputList, ["Folder", "Flagged files", "Percentage"]))
 
@@ -572,7 +579,7 @@ def nn(args, path):
     tensorInput = torch.tensor(fileData, dtype=torch.float32).to(device)
 
     with torch.no_grad():
-        output = model(tensorInput)
+        output = model(tensorInput.unsqueeze(0))
 
     return output.item()
 
