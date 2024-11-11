@@ -568,9 +568,9 @@ def nn(args, path):
         if len(pe.sections) > i:
             section = pe.sections[i]
 
-            fileData.append([section.SizeOfRawData] + [calculateEntropy(section.get_data())] + oneHotEncodeSection(getFullSectionName(pe, section.Name)))
+            fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
         else:
-            fileData.append([0,0] + oneHotEncodeSection(''))
+            fileData.append(oneHotEncodeSection('') + [0,0])
 
     for entry in fileData:
         entry[-2] /= 5e+8
