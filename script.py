@@ -12,7 +12,7 @@ import numpy as np
 
 from sklearn.preprocessing import OneHotEncoder
 
-# from modelClasses.initial import EnhancedModel, categories
+from modelClasses.initial import EnhancedModel, categories
 from modelClasses.second import SimplifiedModel, categories
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
@@ -424,7 +424,7 @@ def benchmark(args, path):
             else:
 
                 match = nn(args, [args.use_nn, path / folder / exe])
-
+                print(match)
                 if match > 0.5:
                     numDetections += 1
 
@@ -573,8 +573,8 @@ def nn(args, path):
             fileData.append([0,0] + oneHotEncodeSection(''))
 
     for entry in fileData:
-        entry[0] = entry[0] / 5e+8
-        entry[1] = entry[1] / 8
+        entry[-2] /= 5e+8
+        entry[-1] /= 8
 
     tensorInput = torch.tensor(fileData, dtype=torch.float32).to(device)
 
