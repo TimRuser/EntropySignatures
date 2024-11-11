@@ -12,7 +12,8 @@ import numpy as np
 
 from sklearn.preprocessing import OneHotEncoder
 
-from modelClasses.initial import EnhancedModel, categories
+# from modelClasses.initial import EnhancedModel, categories
+from modelClasses.second import EnhancedModel, categories
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
 parser.add_argument('mode', type=str, help="Operating mode, can be generate, test or show")
