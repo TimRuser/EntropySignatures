@@ -424,7 +424,7 @@ def benchmark(args, path):
             else:
 
                 match = nn(args, [args.use_nn, path / folder / exe])
-                print(match)
+                
                 if match > 0.5:
                     numDetections += 1
 
