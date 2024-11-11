@@ -10,7 +10,9 @@ import pandas as pd
 import torch
 import numpy as np
 
-from modelClasses.initial import EnhancedModel
+from sklearn.preprocessing import OneHotEncoder
+
+from modelClasses.initial import EnhancedModel, categories
 
 parser = argparse.ArgumentParser(description="Tool to create entropy signatures and match a file with them")
 parser.add_argument('mode', type=str, help="Operating mode, can be generate, test or show")
@@ -469,35 +471,17 @@ def sections(args, path):
 
     pe.close()
 
-def chooseSectionNum(name: str):
-    if name == ".text":
-        return 1
-    elif name == ".rdata":
-        return 2
-    elif name == ".pdata":
-        return 3
-    elif name == ".reloc":
-        return 4
-    elif name == ".rsrc":
-        return 5
-    elif name == ".idata":
-        return 6
-    elif name == ".sdata":
-        return 7
-    elif name == ".tls":
-        return 8
-    elif name == ".data":
-        return 9
-    elif name == ".debug":
-        return 10
-    elif name == ".ndata":
-        return 11
-    elif name == ".xdata":
-        return 12
-    elif name.startswith(".debug"):
-        return 13
-    else:
-        return 14
+def oneHotEncodeSection(name: str):
+
+    oneHotVector = [0 for i in range(len(categories) + 1)]    
+
+    for i, category in enumerate(categories):
+        if name == category:
+            oneHotVector[i] = 1
+            return oneHotVector
+    oneHotVector[-1] = 1
+    return oneHotVector
+        
 
 def dataset(args, path):
 
@@ -536,17 +520,11 @@ def dataset(args, path):
             fileData = []
 
             for i in range(16):
-
                 if len(pe.sections) > i:
                     section = pe.sections[i]
-
-                    fileData.append([
-                        chooseSectionNum(getFullSectionName(pe, section.Name)),
-                        section.SizeOfRawData,
-                        calculateEntropy(section.get_data())
-                    ])
+                    fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
                 else:
-                    fileData.append([0,0,0,0])
+                    fileData.append(oneHotEncodeSection('') + [0,0])
 
             outputData.append({
                 'label': args.label,
@@ -582,40 +560,15 @@ def nn(args, path):
         if len(pe.sections) > i:
             section = pe.sections[i]
 
-            fileData.append([
-                chooseSectionNum(getFullSectionName(pe, section.Name)),
-                section.SizeOfRawData,
-                calculateEntropy(section.get_data())
-            ])
+            fileData.append([section.SizeOfRawData] + [calculateEntropy(section.get_data())] + oneHotEncodeSection(getFullSectionName(pe, section.Name)))
         else:
-            fileData.append([0,0,0,0])
+            fileData.append([0,0] + oneHotEncodeSection(''))
 
-    # A bit janky but works
-    def ensure_16_entries(entry, target_length=16, pad_value=0):
-        if len(entry) > target_length:
-            return entry[:target_length]
-        elif len(entry) < target_length:
-            return entry + [pad_value] * (target_length - len(entry))
-        return entry  
+    for entry in fileData:
+        entry[0] = entry[0] / 5e+8
+        entry[1] = entry[1] / 8
 
-    X = [np.array([ensure_16_entries(entry)]) for entry in fileData]
-
-    newX = []
-    for entry in X:
-        newXTemp = []
-        for i in range(len(entry)):
-            tmp = [0, 0, 0]
-
-            tmp[0] = entry[i][0] / 14
-            tmp[1] = entry[i][1] / 1000000000
-            tmp[2] = entry[i][2] / 8
-            
-            newXTemp.append(tmp)
-        newX.append(newXTemp)
-    X = newX
-
-    tensorInput = torch.tensor(X, dtype=torch.float32).to(device)
-    tensorInput = tensorInput.permute(1,0,2)
+    tensorInput = torch.tensor(fileData, dtype=torch.float32).to(device)
 
     with torch.no_grad():
         output = model(tensorInput)

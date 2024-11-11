@@ -52,3 +52,5 @@ class EnhancedModel(nn.Module):
         output = self.sigmoid(output)  # Apply sigmoid to get probabilities between 0 and 1
         
         return output
+
+categories = ['.text', '.rdata', '.pdata', '.reloc', '.rsrc','.bss', '.idata', '.edata', '.sdata', '.tls', '.data', '.debug', '.ndata', '.xdata', 'Overlay']
