@@ -596,8 +596,9 @@ def nn(args, path):
             fileData.append(oneHotEncodeSection('') + [0,0,0,0,0,0])
 
     for entry in fileData:
-        entry[-2] /= 5e+8
-        entry[-1] /= 8
+        entry[-6] /= 5e+8
+        for e in range(5):
+                entry[-e - 1] /= 8
 
     tensorInput = torch.tensor(fileData, dtype=torch.float32).to(device)
 
