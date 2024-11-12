@@ -9,6 +9,8 @@ import pefile
 import pandas as pd
 import torch
 import numpy as np
+import sys
+import time
 
 from sklearn.preprocessing import OneHotEncoder
 
@@ -419,6 +421,7 @@ def benchmark(args, path):
                         if match[2] > 0.85:
                             numDetections += 1
                             break
+                sys.stdout.write('\033[2K\033[1G')
                 print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
 
             else:
@@ -427,7 +430,7 @@ def benchmark(args, path):
                 
                 if match > 0.5:
                     numDetections += 1
-
+                sys.stdout.write('\033[2K\033[1G')
                 print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
 
         if len(allExes) > 0:
@@ -551,7 +554,9 @@ def dataset(args, path):
                 'sections': fileData
             })
 
+            sys.stdout.write('\033[2K\033[1G')
             print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
+            time.sleep(1)
 
 
     os.makedirs('datasets/', exist_ok=True)
