@@ -532,9 +532,19 @@ def dataset(args, path):
             for i in range(16):
                 if len(pe.sections) > i:
                     section = pe.sections[i]
-                    fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
+
+                    binary_data = section.get_data()
+
+                    part_size = len(binary_data) // 4
+
+                    if len(binary_data) > 0:
+                        parts = [binary_data[i:i + part_size] for i in range(0, len(binary_data), part_size)]
+                    else:
+                        parts = [b'',b'',b'',b'']
+
+                    fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(parts[0]), calculateEntropy(parts[1]), calculateEntropy(parts[2]), calculateEntropy(parts[3]), calculateEntropy(binary_data)])
                 else:
-                    fileData.append(oneHotEncodeSection('') + [0,0])
+                    fileData.append(oneHotEncodeSection('') + [0,0,0,0,0,0])
 
             outputData.append({
                 'label': args.label,
@@ -570,7 +580,16 @@ def nn(args, path):
         if len(pe.sections) > i:
             section = pe.sections[i]
 
-            fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
+            binary_data = section.get_data()
+
+            part_size = len(binary_data) // 4
+
+            if len(binary_data) > 0:
+                parts = [binary_data[i:i + part_size] for i in range(0, len(binary_data), part_size)]
+            else:
+                parts = [b'',b'',b'',b'']
+
+            fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(parts[0]), calculateEntropy(parts[1]), calculateEntropy(parts[2]), calculateEntropy(parts[3]), calculateEntropy(binary_data)])
         else:
             fileData.append(oneHotEncodeSection('') + [0,0])
 
