@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 import numpy as np
 import sys
-import time
 
 from sklearn.preprocessing import OneHotEncoder
 
@@ -556,7 +555,6 @@ def dataset(args, path):
 
             sys.stdout.write('\033[2K\033[1G')
             print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
-            time.sleep(1)
 
 
     os.makedirs('datasets/', exist_ok=True)
