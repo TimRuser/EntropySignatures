@@ -593,7 +593,7 @@ def nn(args, path):
 
             fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(parts[0]), calculateEntropy(parts[1]), calculateEntropy(parts[2]), calculateEntropy(parts[3]), calculateEntropy(binary_data)])
         else:
-            fileData.append(oneHotEncodeSection('') + [0,0])
+            fileData.append(oneHotEncodeSection('') + [0,0,0,0,0,0])
 
     for entry in fileData:
         entry[-2] /= 5e+8
