@@ -543,10 +543,24 @@ def dataset(args, path):
 
             with open(path / folder / file, 'rb') as f:
 
+                data = f.read()
+                f.seek(0)
+
+                entropyList = []
+
+                for i in range(round(len(data) / 2048)):
+                    entropyList.append(calculateEntropy(f.read(2048)))
+
+                f.seek(0)
+
                 outputData.append({
                     'label': args.label,
                     'fullEntropy': calculateEntropy(f.read()),
-                    'sections': fileData
+                    'numSections': len(pe.sections),
+                    'minEntropy': min(entropyList),
+                    'maxEntropy': max(entropyList),
+                    'sections': fileData,
+                    'entropyList': entropyList
                 })
 
             sys.stdout.write('\033[2K\033[1G')
