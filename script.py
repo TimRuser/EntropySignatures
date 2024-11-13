@@ -484,13 +484,16 @@ def sections(args, path):
 
 def oneHotEncodeSection(name: str):
 
-    oneHotVector = [0 for i in range(len(categories) + 1)]    
+    oneHotVector = [0 for i in range(len(categories) + 2)]    
 
     for i, category in enumerate(categories):
         if name == category:
             oneHotVector[i] = 1
             return oneHotVector
-    oneHotVector[-1] = 1
+    if len(name) != 0:
+        oneHotVector[-2] = 1
+    else:
+        oneHotVector[-1] = 1
     return oneHotVector
         
 
@@ -530,27 +533,21 @@ def dataset(args, path):
 
             fileData = []
 
-            for i in range(16):
+            for i in range(12):
                 if len(pe.sections) > i:
                     section = pe.sections[i]
 
-                    binary_data = section.get_data()
-
-                    part_size = len(binary_data) // 4
-
-                    if len(binary_data) > 0:
-                        parts = [binary_data[i:i + part_size] for i in range(0, len(binary_data), part_size)]
-                    else:
-                        parts = [b'',b'',b'',b'']
-
-                    fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(parts[0]), calculateEntropy(parts[1]), calculateEntropy(parts[2]), calculateEntropy(parts[3]), calculateEntropy(binary_data)])
+                    fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
                 else:
-                    fileData.append(oneHotEncodeSection('') + [0,0,0,0,0,0])
+                    fileData.append(oneHotEncodeSection('') + [0,0])
 
-            outputData.append({
-                'label': args.label,
-                'sections': fileData
-            })
+            with open(path / folder / file, 'rb') as f:
+
+                outputData.append({
+                    'label': args.label,
+                    'fullEntropy': calculateEntropy(f.read()),
+                    'sections': fileData
+                })
 
             sys.stdout.write('\033[2K\033[1G')
             print("Evaluating folder " + folder + " " + str(folderCounter) + "/" + str(len(listFolders)) +   " : "  + str(counter) + "/" + str(len(allExes)), end='\r')
@@ -577,23 +574,14 @@ def nn(args, path):
 
     fileData = []    
 
-    for i in range(16):
+    for i in range(12):
 
         if len(pe.sections) > i:
             section = pe.sections[i]
 
-            binary_data = section.get_data()
-
-            part_size = len(binary_data) // 4
-
-            if len(binary_data) > 0:
-                parts = [binary_data[i:i + part_size] for i in range(0, len(binary_data), part_size)]
-            else:
-                parts = [b'',b'',b'',b'']
-
-            fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(parts[0]), calculateEntropy(parts[1]), calculateEntropy(parts[2]), calculateEntropy(parts[3]), calculateEntropy(binary_data)])
+            fileData.append(oneHotEncodeSection(getFullSectionName(pe, section.Name)) + [section.SizeOfRawData] + [calculateEntropy(section.get_data())])
         else:
-            fileData.append(oneHotEncodeSection('') + [0,0,0,0,0,0])
+            fileData.append(oneHotEncodeSection('') + [0,0])
 
     for entry in fileData:
         entry[-6] /= 5e+8
