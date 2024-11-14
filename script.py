@@ -571,7 +571,7 @@ def dataset(args, path):
 
     pd.DataFrame(outputData).to_json('datasets/' + path.name + '.json', orient='records')
 
-    print("Successfully generated dataset and saved it to dataset/" + path.name + ".json")
+    print("Successfully generated dataset and saved it to datasets/" + path.name + ".json")
 
 def nn(args, path):
 
